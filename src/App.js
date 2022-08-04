@@ -11,17 +11,43 @@ function App() {
   });
 
   const [input, setInput] = useState({value: ''});
-  const [message, setMessage] = useState({message: ''})
+  const [message, setMessage] = useState({message: ''});
+  const [winnerMessage, setWinnerMessage] = useState({message: ''});
 
   async function handleSubmit(event) {
     event.preventDefault();
     const accounts = await web3.eth.getAccounts();
     setMessage({message: 'Waiting on transaction success...'});
-    await lottery.methods.enter().send({
+    await lotteryContract.methods.enter().send({
       from: accounts[0],
       value: web3.utils.toWei(input.value, 'ether')
     });
     setMessage({message: 'You have been entered'});
+    setInput({
+      value: ''
+    });
+  }
+
+  async function pickWinner(event) {
+    event.preventDefault();
+    const accounts = await web3.eth.getAccounts();
+
+    setWinnerMessage({message: 'Waiting on transaction success...'});
+
+    await lotteryContract.methods.pickWinner().send({
+      from: accounts[0]
+    });
+
+    const winner = await lotteryContract.methods.getWinner().call();
+
+    setWinnerMessage({message: `${winner} has won this current lottery`});
+    
+    setContractState({
+      ...contractState,
+      players: [],
+      balance: ''
+    });
+
   }
 
   useEffect(() => {
@@ -52,6 +78,14 @@ function App() {
         <button>Enter</button>
       </form>
       <p>{message.message}</p>
+      
+      <hr/>
+
+      <div>
+        <h2>Time to pick a winner?</h2>
+        <button onClick={pickWinner}>Pick Winner</button>
+      </div>
+      <h4>{winnerMessage.message}</h4>
     </>
   );
 }
